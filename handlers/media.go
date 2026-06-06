@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -52,12 +53,26 @@ func MediaPage(c *fiber.Ctx) error {
 	})
 }
 
+// allowedMediaExtensions contains safe media file extensions for streaming
+var allowedMediaExtensions = map[string]bool{
+	".mp3": true, ".wav": true, ".ogg": true, ".flac": true, ".aac": true, ".wma": true, ".m4a": true,
+	".mp4": true, ".mkv": true, ".avi": true, ".mov": true, ".wmv": true, ".flv": true, ".webm": true, ".m4v": true,
+	".jpg": true, ".jpeg": true, ".png": true, ".gif": true, ".bmp": true, ".webp": true, ".ico": true, ".tiff": true,
+}
+
 // APIMediaStream handles HTTP 206 Partial Content streaming
 func APIMediaStream(c *fiber.Ctx) error {
 	user := auth.GetCurrentUser(c)
 	rootDir := services.GetUserRootDir(user, config.AppConfig.RootDir)
 
 	filePath := c.Params("*")
+
+	// Validate file extension against whitelist
+	ext := strings.ToLower(filepath.Ext(filePath))
+	if !allowedMediaExtensions[ext] {
+		return c.Status(fiber.StatusForbidden).SendString("Bu dosya türü medya akışı için desteklenmiyor")
+	}
+
 	fullPath, err := utils.ResolvePath(rootDir, "/"+filePath)
 	if err != nil {
 		return c.Status(fiber.StatusForbidden).SendString("Access denied")
@@ -76,6 +91,12 @@ func APIMediaStream(c *fiber.Ctx) error {
 
 	fileSize := stat.Size()
 	mimeType := utils.GetMimeType(filePath)
+
+	// Force safe content types - prevent browser from executing content
+	if strings.HasPrefix(mimeType, "text/") || mimeType == "image/svg+xml" || mimeType == "application/xhtml+xml" {
+		c.Set("Content-Disposition", "attachment")
+		mimeType = "application/octet-stream"
+	}
 
 	// Handle Range header for partial content
 	rangeHeader := c.Get("Range")

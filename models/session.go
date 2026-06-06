@@ -15,6 +15,7 @@ type Session struct {
 	ID        int64     `json:"id"`
 	UserID    int64     `json:"user_id"`
 	Token     string    `json:"token"`
+	CSRFToken string    `json:"csrf_token"`
 	ExpiresAt time.Time `json:"expires_at"`
 	CreatedAt time.Time `json:"created_at"`
 }
@@ -50,10 +51,11 @@ func CreateSession(userID int64) (*Session, error) {
 // ValidateSession checks if a session token is valid and returns the session
 func ValidateSession(token string) (*Session, error) {
 	session := &Session{}
+	var csrfToken sql.NullString
 	err := database.DB.QueryRow(
-		"SELECT id, user_id, token, expires_at, created_at FROM sessions WHERE token = ? AND expires_at > ?",
+		"SELECT id, user_id, token, COALESCE(csrf_token, '') as csrf_token, expires_at, created_at FROM sessions WHERE token = ? AND expires_at > ?",
 		token, time.Now(),
-	).Scan(&session.ID, &session.UserID, &session.Token, &session.ExpiresAt, &session.CreatedAt)
+	).Scan(&session.ID, &session.UserID, &session.Token, &csrfToken, &session.ExpiresAt, &session.CreatedAt)
 
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -61,7 +63,16 @@ func ValidateSession(token string) (*Session, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to validate session: %w", err)
 	}
+	if csrfToken.Valid {
+		session.CSRFToken = csrfToken.String
+	}
 	return session, nil
+}
+
+// UpdateSessionCSRF updates the CSRF token for a session
+func UpdateSessionCSRF(sessionToken, csrfToken string) error {
+	_, err := database.DB.Exec("UPDATE sessions SET csrf_token = ? WHERE token = ?", csrfToken, sessionToken)
+	return err
 }
 
 // DeleteSession removes a session by token

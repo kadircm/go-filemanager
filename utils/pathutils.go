@@ -47,7 +47,7 @@ func ResolvePath(rootDir, requestPath string) (string, error) {
 	absPath = filepath.ToSlash(absPath)
 	absRoot = filepath.ToSlash(absRoot)
 
-	if !strings.HasPrefix(absPath, absRoot) {
+	if absPath != absRoot && !strings.HasPrefix(absPath, absRoot+"/") {
 		return "", fmt.Errorf("path traversal detected: %s is outside root %s", requestPath, rootDir)
 	}
 

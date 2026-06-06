@@ -25,6 +25,9 @@ type FileInfo struct {
 	Category    utils.FileCategory `json:"category"`
 	MimeType    string             `json:"mime_type,omitempty"`
 	Owner       string             `json:"owner,omitempty"`
+	Group       string             `json:"group,omitempty"`
+	OwnerUID    int                `json:"owner_uid"`
+	OwnerGID    int                `json:"owner_gid"`
 	IsSymlink   bool               `json:"is_symlink"`
 	Extension   string             `json:"extension"`
 }
@@ -75,6 +78,16 @@ func ListDirectory(rootDir, requestPath string) ([]FileInfo, error) {
 		}
 
 		files = append(files, fi)
+
+		// Populate owner info
+		entryFullPath := filepath.Join(fullPath, entry.Name())
+		uid, gid, ownerName, groupName, ownerErr := utils.GetFileOwner(entryFullPath)
+		if ownerErr == nil {
+			files[len(files)-1].Owner = ownerName
+			files[len(files)-1].Group = groupName
+			files[len(files)-1].OwnerUID = uid
+			files[len(files)-1].OwnerGID = gid
+		}
 	}
 
 	// Sort: directories first, then alphabetically
@@ -237,6 +250,15 @@ func GetFileInfo(rootDir, filePath string) (*FileInfo, error) {
 		ModTimeStr:  info.ModTime().Format("2006-01-02 15:04:05"),
 		Permissions: info.Mode().String(),
 		Extension:   strings.ToLower(filepath.Ext(info.Name())),
+	}
+
+	// Populate owner info
+	uid, gid, ownerName, groupName, ownerErr := utils.GetFileOwner(fullPath)
+	if ownerErr == nil {
+		fi.Owner = ownerName
+		fi.Group = groupName
+		fi.OwnerUID = uid
+		fi.OwnerGID = gid
 	}
 
 	if info.IsDir() {

@@ -66,7 +66,7 @@ func HandleLogin(c *fiber.Ctx) error {
 		Path:     "/",
 		MaxAge:   7 * 24 * 60 * 60, // 7 days
 		HTTPOnly: true,
-		Secure:   false, // Set true behind HTTPS
+		Secure:   config.AppConfig.SecureCookie,
 		SameSite: "Lax",
 	})
 
@@ -122,7 +122,7 @@ func HandleLoginAPI(c *fiber.Ctx) error {
 		Path:     "/",
 		MaxAge:   7 * 24 * 60 * 60,
 		HTTPOnly: true,
-		Secure:   false,
+		Secure:   config.AppConfig.SecureCookie,
 		SameSite: "Lax",
 	})
 

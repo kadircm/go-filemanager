@@ -174,8 +174,8 @@ func RestoreFromTrash(trashBaseDir, rootDir, username, trashID string) error {
 	userTrashDir := filepath.Join(trashBaseDir, username)
 	trashItemDir := filepath.Join(userTrashDir, trashID)
 
-	// Validate path
-	if strings.Contains(trashID, "..") || strings.Contains(trashID, "/") {
+	// Validate path (including Windows backslash)
+	if strings.Contains(trashID, "..") || strings.Contains(trashID, "/") || strings.Contains(trashID, "\\") {
 		return fmt.Errorf("invalid trash ID")
 	}
 
@@ -245,7 +245,7 @@ func RestoreFromTrash(trashBaseDir, rootDir, username, trashID string) error {
 
 // DeletePermanent permanently deletes an item from trash
 func DeletePermanent(trashBaseDir, username, trashID string) error {
-	if strings.Contains(trashID, "..") || strings.Contains(trashID, "/") {
+	if strings.Contains(trashID, "..") || strings.Contains(trashID, "/") || strings.Contains(trashID, "\\") {
 		return fmt.Errorf("invalid trash ID")
 	}
 

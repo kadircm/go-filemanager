@@ -283,6 +283,8 @@ async function showFileInfo(path) {
                 <tr><td class="text-muted" style="padding: 6px 0;">Boyut:</td><td>${info.size_human}</td></tr>
                 <tr><td class="text-muted" style="padding: 6px 0;">Değiştirilme:</td><td>${info.mod_time_str}</td></tr>
                 <tr><td class="text-muted" style="padding: 6px 0;">İzinler:</td><td class="mono">${info.permissions}</td></tr>
+                <tr><td class="text-muted" style="padding: 6px 0;">Owner:</td><td>${info.owner || '-'} (UID: ${info.owner_uid || 0})</td></tr>
+                <tr><td class="text-muted" style="padding: 6px 0;">Grup:</td><td>${info.group || '-'} (GID: ${info.owner_gid || 0})</td></tr>
                 ${info.mime_type ? '<tr><td class="text-muted" style="padding: 6px 0;">MIME:</td><td>' + info.mime_type + '</td></tr>' : ''}
             </table>
         `;
@@ -294,3 +296,130 @@ async function showFileInfo(path) {
         showToast('Dosya bilgisi alınamadı', 'error');
     }
 }
+
+// Change Owner Modal
+async function showChangeOwnerModal(path) {
+    const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+    const result = await apiCall('/api/files/info/' + cleanPath);
+
+    if (!result.success || !result.data) {
+        showToast('Dosya bilgisi alınamadı', 'error');
+        return;
+    }
+
+    const info = result.data;
+    document.getElementById('modalTitle').textContent = 'Owner Değiştir';
+    document.getElementById('modalBody').innerHTML = `
+        <div class="form-group" style="margin-bottom:8px;">
+            <label class="form-label">Dosya</label>
+            <div class="mono" style="font-size:0.85rem;padding:8px 12px;background:var(--bg-card);border-radius:8px;border:1px solid var(--border-color);word-break:break-all;">${path}</div>
+        </div>
+        <div class="form-group" style="margin-bottom:8px;">
+            <label class="form-label">Mevcut: ${info.owner || '-'}:${info.group || '-'} (${info.owner_uid}:${info.owner_gid})</label>
+        </div>
+        <div style="display:flex;gap:12px;">
+            <div class="form-group" style="flex:1;">
+                <label class="form-label">UID</label>
+                <input type="number" class="form-input" id="chownUid" value="${info.owner_uid || 0}" min="0">
+            </div>
+            <div class="form-group" style="flex:1;">
+                <label class="form-label">GID</label>
+                <input type="number" class="form-input" id="chownGid" value="${info.owner_gid || 0}" min="0">
+            </div>
+        </div>
+    `;
+    document.getElementById('modalFooter').innerHTML = `
+        <button class="btn btn-secondary" onclick="closeModal()">İptal</button>
+        <button class="btn btn-primary" onclick="doChangeOwner('${path}')">Değiştir</button>
+    `;
+    document.getElementById('modalOverlay').classList.add('active');
+}
+
+async function doChangeOwner(path) {
+    const uid = parseInt(document.getElementById('chownUid').value);
+    const gid = parseInt(document.getElementById('chownGid').value);
+
+    if (isNaN(uid) || isNaN(gid)) {
+        showToast('Geçerli UID ve GID değerleri girin', 'warning');
+        return;
+    }
+
+    const result = await apiCall('/api/files/chown', {
+        method: 'PUT',
+        body: JSON.stringify({ path: path, uid: uid, gid: gid })
+    });
+
+    if (result.success) {
+        showToast('Owner değiştirildi', 'success');
+        closeModal();
+        setTimeout(refreshFiles, 300);
+    } else {
+        showToast(result.error || 'Owner değiştirilemedi', 'error');
+    }
+}
+
+// Change Permissions Modal
+async function showChangePermissionsModal(path) {
+    const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+    const result = await apiCall('/api/files/info/' + cleanPath);
+
+    if (!result.success || !result.data) {
+        showToast('Dosya bilgisi alınamadı', 'error');
+        return;
+    }
+
+    const info = result.data;
+    document.getElementById('modalTitle').textContent = 'İzinleri Değiştir';
+    document.getElementById('modalBody').innerHTML = `
+        <div class="form-group" style="margin-bottom:8px;">
+            <label class="form-label">Dosya</label>
+            <div class="mono" style="font-size:0.85rem;padding:8px 12px;background:var(--bg-card);border-radius:8px;border:1px solid var(--border-color);word-break:break-all;">${path}</div>
+        </div>
+        <div class="form-group" style="margin-bottom:8px;">
+            <label class="form-label">Mevcut İzinler: <span class="mono">${info.permissions}</span></label>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Yeni İzinler (Octal, örn: 0755)</label>
+            <input type="text" class="form-input" id="chmodValue" value="0755" placeholder="0755" maxlength="4">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px;">
+            <button class="btn btn-ghost btn-sm" onclick="document.getElementById('chmodValue').value='0755'" style="font-size:0.8rem;">0755 (Klasör)</button>
+            <button class="btn btn-ghost btn-sm" onclick="document.getElementById('chmodValue').value='0644'" style="font-size:0.8rem;">0644 (Dosya)</button>
+            <button class="btn btn-ghost btn-sm" onclick="document.getElementById('chmodValue').value='0700'" style="font-size:0.8rem;">0700 (Private)</button>
+            <button class="btn btn-ghost btn-sm" onclick="document.getElementById('chmodValue').value='0775'" style="font-size:0.8rem;">0775 (Grup)</button>
+            <button class="btn btn-ghost btn-sm" onclick="document.getElementById('chmodValue').value='0666'" style="font-size:0.8rem;">0666 (RW-All)</button>
+            <button class="btn btn-ghost btn-sm" onclick="document.getElementById('chmodValue').value='0777'" style="font-size:0.8rem;">0777 (Full)</button>
+        </div>
+    `;
+    document.getElementById('modalFooter').innerHTML = `
+        <button class="btn btn-secondary" onclick="closeModal()">İptal</button>
+        <button class="btn btn-primary" onclick="doChangePermissions('${path}')">Değiştir</button>
+    `;
+    document.getElementById('modalOverlay').classList.add('active');
+}
+
+async function doChangePermissions(path) {
+    const permission = document.getElementById('chmodValue').value.trim();
+
+    if (!/^0?[0-7]{3}$/.test(permission)) {
+        showToast('Geçerli bir octal izin değeri girin (örn: 0755)', 'warning');
+        return;
+    }
+
+    // Ensure it starts with 0
+    const normalizedPerm = permission.startsWith('0') ? permission : '0' + permission;
+
+    const result = await apiCall('/api/files/chmod', {
+        method: 'PUT',
+        body: JSON.stringify({ path: path, permission: normalizedPerm })
+    });
+
+    if (result.success) {
+        showToast('İzinler değiştirildi', 'success');
+        closeModal();
+        setTimeout(refreshFiles, 300);
+    } else {
+        showToast(result.error || 'İzinler değiştirilemedi', 'error');
+    }
+}
+

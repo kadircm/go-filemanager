@@ -114,8 +114,13 @@ func main() {
 	apiLimited.Post("/api/files/copy", handlers.APICopyFile)
 	apiLimited.Delete("/api/files/*", handlers.APIDeleteFile)
 	apiLimited.Post("/api/files/upload", handlers.APIUploadFile)
+	apiLimited.Post("/api/files/upload/chunk", handlers.APIUploadChunk)
 	apiLimited.Get("/api/files/download/*", handlers.APIDownloadFile)
 	apiLimited.Get("/api/files/info/*", handlers.APIGetFileInfo)
+	apiLimited.Get("/api/files/check-exists", handlers.APICheckExists)
+	apiLimited.Get("/api/files/browse", handlers.APIBrowseFolders)
+	apiLimited.Put("/api/files/chown", handlers.APIChangeOwner)
+	apiLimited.Put("/api/files/chmod", handlers.APIChangePermissions)
 
 	// Editor API routes
 	apiLimited.Get("/api/editor/read/*", handlers.APIReadFile)

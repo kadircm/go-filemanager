@@ -9,16 +9,17 @@ import (
 
 // Config holds all application configuration
 type Config struct {
-	Port       int
-	RootDir    string
-	DBPath     string
-	SecretKey  string
-	AdminUser  string
-	AdminPass  string
-	TrashDir   string
-	MaxUpload  int64 // Max upload size in MB
-	RateLimit  int   // Requests per minute
-	Debug      bool
+	Port         int
+	RootDir      string
+	DBPath       string
+	SecretKey    string
+	AdminUser    string
+	AdminPass    string
+	TrashDir     string
+	MaxUpload    int64 // Max upload size in MB
+	RateLimit    int   // Requests per minute
+	SecureCookie bool  // Set Secure flag on cookies (for HTTPS)
+	Debug        bool
 }
 
 var AppConfig *Config
@@ -36,6 +37,7 @@ func Parse() *Config {
 	flag.StringVar(&cfg.TrashDir, "trash-dir", "", "Trash directory (default: ~/.filemanager_trash)")
 	flag.Int64Var(&cfg.MaxUpload, "max-upload", 1024, "Maximum upload size in MB")
 	flag.IntVar(&cfg.RateLimit, "rate-limit", 60, "Rate limit: requests per minute per IP")
+	flag.BoolVar(&cfg.SecureCookie, "secure-cookie", false, "Set Secure flag on cookies (enable for HTTPS)")
 	flag.BoolVar(&cfg.Debug, "debug", false, "Enable debug mode")
 
 	flag.Parse()

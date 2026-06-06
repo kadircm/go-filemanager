@@ -87,6 +87,9 @@ func runMigrations() error {
 		}
 	}
 
+	// Add csrf_token column to sessions if not exists (safe migration)
+	DB.Exec("ALTER TABLE sessions ADD COLUMN csrf_token TEXT DEFAULT ''")
+
 	return nil
 }
 

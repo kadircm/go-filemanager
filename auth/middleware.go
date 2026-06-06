@@ -87,18 +87,32 @@ func GetCurrentUser(c *fiber.Ctx) *models.User {
 
 // CSRFMiddleware generates and validates CSRF tokens
 func CSRFMiddleware(c *fiber.Ctx) error {
-	// Generate CSRF token if not present
-	csrfToken := c.Cookies("csrf_token")
+	// Get session from context (set by RequireAuth)
+	session, _ := c.Locals("session").(*models.Session)
+
+	// Generate CSRF token if not present in session
+	csrfToken := ""
+	if session != nil && session.CSRFToken != "" {
+		csrfToken = session.CSRFToken
+	}
+
 	if csrfToken == "" {
 		csrfToken = generateCSRFToken()
-		c.Cookie(&fiber.Cookie{
-			Name:     "csrf_token",
-			Value:    csrfToken,
-			Path:     "/",
-			HTTPOnly: false, // JS needs to read this
-			SameSite: "Lax",
-		})
+		// Save to session in database
+		if session != nil {
+			models.UpdateSessionCSRF(session.Token, csrfToken)
+			session.CSRFToken = csrfToken
+		}
 	}
+
+	// Set cookie for JS to read
+	c.Cookie(&fiber.Cookie{
+		Name:     "csrf_token",
+		Value:    csrfToken,
+		Path:     "/",
+		HTTPOnly: false, // JS needs to read this
+		SameSite: "Lax",
+	})
 
 	// For safe methods, just pass through
 	method := c.Method()
@@ -107,12 +121,13 @@ func CSRFMiddleware(c *fiber.Ctx) error {
 		return c.Next()
 	}
 
-	// For state-changing methods, validate CSRF token
+	// For state-changing methods, validate CSRF token against session
 	requestToken := c.Get("X-CSRF-Token")
 	if requestToken == "" {
 		requestToken = c.FormValue("_csrf")
 	}
 
+	// Validate against session-stored token (not cookie!)
 	if requestToken == "" || requestToken != csrfToken {
 		return utils.SendError(c, fiber.StatusForbidden, "Geçersiz CSRF token")
 	}

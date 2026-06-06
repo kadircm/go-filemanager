@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Güvenlik Denetim Raporu - Go File Manager</title>
+    <!-- Google Fonts: Inter & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Dark Theme Colors */
+            --bg-base: #0b0f19;
+            --bg-surface: rgba(17, 24, 39, 0.7);
+            --bg-card: rgba(31, 41, 55, 0.5);
+            --border-color: rgba(255, 255, 255, 0.08);
+            
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --text-inverse: #111827;
+            
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.15);
+            
+            --critical: #f43f5e;
+            --critical-bg: rgba(244, 63, 94, 0.1);
+            --high: #fb923c;
+            --high-bg: rgba(251, 146, 60, 0.1);
+            --medium: #facc15;
+            --medium-bg: rgba(250, 204, 21, 0.1);
+            --low: #38bdf8;
+            --low-bg: rgba(56, 189, 248, 0.1);
+            --info: #34d399;
+            --info-bg: rgba(52, 211, 153, 0.1);
+            
+            --code-bg: #1e1e2f;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        [data-theme="light"] {
+            /* Light Theme Colors */
+            --bg-base: #f8fafc;
+            --bg-surface: rgba(255, 255, 255, 0.8);
+            --bg-card: rgba(241, 245, 249, 0.9);
+            --border-color: rgba(0, 0, 0, 0.08);
+            
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --text-inverse: #ffffff;
+            
+            --primary: #4f46e5;
+            --primary-glow: rgba(79, 70, 229, 0.1);
+            
+            --critical: #e11d48;
+            --critical-bg: rgba(225, 29, 72, 0.15);
+            --high: #ea580c;
+            --high-bg: rgba(234, 88, 12, 0.15);
+            --medium: #ca8a04;
+            --medium-bg: rgba(202, 138, 4, 0.15);
+            --low: #0284c7;
+            --low-bg: rgba(2, 132, 199, 0.15);
+            
+            --code-bg: #f1f5f9;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            transition: var(--transition);
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.05) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(244, 63, 94, 0.03) 0px, transparent 50%);
+            background-attachment: fixed;
+        }
+
+        h1, h2, h3, h4 {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Header Styles */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 2rem;
+            background: var(--bg-surface);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            margin-bottom: 2.5rem;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            transition: var(--transition);
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--critical));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: bold;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .logo-title h1 {
+            font-size: 1.4rem;
+            background: linear-gradient(135deg, var(--text-main), var(--text-muted));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo-title p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .theme-toggle-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
+            border-radius: 10px;
+            color: var(--text-main);
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition);
+        }
+
+        .theme-toggle-btn:hover {
+            background: var(--primary-glow);
+            border-color: var(--primary);
+        }
+
+        /* Dashboard Summary Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        @media (max-width: 900px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--bg-surface);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            box-shadow: 0 15px 35px rgba(99, 102, 241, 0.05);
+            border-color: rgba(99, 102, 241, 0.2);
+        }
+
+        .summary-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .summary-header h2 {
+            font-size: 1.6rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .summary-header p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        @media (max-width: 600px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .stat-box {
+            border-radius: 16px;
+            padding: 1.2rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            transition: var(--transition);
+            border: 1px solid transparent;
+        }
+
+        .stat-box.crit { background-color: var(--critical-bg); border-color: rgba(244, 63, 94, 0.2); color: var(--critical); }
+        .stat-box.high { background-color: var(--high-bg); border-color: rgba(251, 146, 60, 0.2); color: var(--high); }
+        .stat-box.med { background-color: var(--medium-bg); border-color: rgba(250, 204, 21, 0.2); color: var(--medium); }
+        .stat-box.low { background-color: var(--low-bg); border-color: rgba(56, 189, 248, 0.2); color: var(--low); }
+
+        .stat-val {
+            font-size: 2rem;
+            font-weight: 800;
+            font-family: 'Outfit', sans-serif;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-main);
+        }
+
+        /* Score Card */
+        .score-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .gauge-container {
+            position: relative;
+            width: 160px;
+            height: 160px;
+            margin-bottom: 1rem;
+        }
+
+        .gauge-svg {
+            transform: rotate(-90deg);
+        }
+
+        .gauge-bg {
+            fill: none;
+            stroke: var(--bg-card);
+            stroke-width: 8;
+        }
+
+        .gauge-fill {
+            fill: none;
+            stroke: var(--critical);
+            stroke-width: 8;
+            stroke-dasharray: 440;
+            stroke-dashoffset: 286; /* Score: 35/100 (440 - (440 * 0.35)) */
+            stroke-linecap: round;
+            transition: var(--transition);
+        }
+
+        .gauge-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .gauge-score {
+            font-size: 2.2rem;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            color: var(--critical);
+        }
+
+        .gauge-max {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: -4px;
+        }
+
+        .score-status {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--critical);
+            margin-bottom: 6px;
+        }
+
+        .score-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Filter Section */
+        .filter-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .filter-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
+            border-radius: 12px;
+            color: var(--text-muted);
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .filter-btn:hover {
+            color: var(--text-main);
+            border-color: var(--primary);
+        }
+
+        .filter-btn.active {
+            background: var(--primary);
+            color: var(--text-inverse);
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px var(--primary-glow);
+        }
+
+        .search-box {
+            position: relative;
+            flex-grow: 1;
+            max-width: 400px;
+        }
+
+        .search-input {
+            width: 100%;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            padding: 10px 16px;
+            border-radius: 12px;
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 0.9rem;
+            transition: var(--transition);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        /* Findings Accordion */
+        .findings-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .finding-item {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            overflow: hidden;
+            transition: var(--transition);
+        }
+
+        .finding-item:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .finding-item.crit-border { border-left: 6px solid var(--critical); }
+        .finding-item.high-border { border-left: 6px solid var(--high); }
+        .finding-item.med-border { border-left: 6px solid var(--medium); }
+        .finding-item.low-border { border-left: 6px solid var(--low); }
+
+        .finding-header {
+            padding: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+            gap: 1rem;
+        }
+
+        .finding-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex-grow: 1;
+        }
+
+        .finding-title-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .finding-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .badge {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .badge.crit-badge { background: var(--critical-bg); color: var(--critical); }
+        .badge.high-badge { background: var(--high-bg); color: var(--high); }
+        .badge.med-badge { background: var(--medium-bg); color: var(--medium); }
+        .badge.low-badge { background: var(--low-bg); color: var(--low); }
+
+        .finding-location {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            font-family: 'Fira Code', monospace;
+            word-break: break-all;
+        }
+
+        .toggle-icon {
+            font-size: 1.5rem;
+            color: var(--text-muted);
+            transition: transform 0.3s;
+        }
+
+        .finding-item.open .toggle-icon {
+            transform: rotate(180deg);
+        }
+
+        .finding-content {
+            display: none;
+            padding: 0 1.5rem 1.5rem 1.5rem;
+            border-top: 1px solid var(--border-color);
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .section-block {
+            margin-top: 1.2rem;
+        }
+
+        .section-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .desc-text {
+            font-size: 0.95rem;
+            color: var(--text-main);
+            margin-bottom: 10px;
+        }
+
+        .code-block-wrapper {
+            margin-top: 8px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        .code-header {
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 6px 12px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-family: 'Fira Code', monospace;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .code-body {
+            background-color: var(--code-bg);
+            padding: 1rem;
+            margin: 0;
+            overflow-x: auto;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            color: #d1d5db;
+        }
+
+        .remediation-box {
+            background: var(--info-bg);
+            border: 1px solid rgba(52, 211, 153, 0.2);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-top: 8px;
+        }
+
+        .remediation-box p {
+            font-size: 0.92rem;
+            color: var(--text-main);
+        }
+
+        /* Footer */
+        footer {
+            margin-top: 4rem;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--border-color);
+            padding-top: 2rem;
+        }
+
+        .footer-logo {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            margin-bottom: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="logo-section">
+                <div class="logo-icon">🛡️</div>
+                <div class="logo-title">
+                    <h1>GÜVENLİK AUDİT RAPORU</h1>
+                    <p>Siber Zafiyet Değerlendirmesi & Kod İncelemesi</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <span style="font-size: 0.85rem; color: var(--text-muted); font-family: monospace;">Tarih: 06.06.2026</span>
+                <button class="theme-toggle-btn" id="themeToggleBtn">
+                    <span>🌙</span> Dark Mode
+                </button>
+            </div>
+        </header>
+
+        <!-- Dashboard Summary Grid -->
+        <div class="dashboard-grid">
+            <div class="card">
+                <div class="summary-header">
+                    <h2>Proje Özeti: Go File Manager</h2>
+                    <p>Statik kod analizi ve mantıksal zafiyet değerlendirmesi sonucunda 7 adet zafiyet tespit edilmiştir.</p>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-box crit">
+                        <div class="stat-val">1</div>
+                        <div class="stat-label">Kritik</div>
+                    </div>
+                    <div class="stat-box high">
+                        <div class="stat-val">1</div>
+                        <div class="stat-label">Yüksek</div>
+                    </div>
+                    <div class="stat-box med">
+                        <div class="stat-val">3</div>
+                        <div class="stat-label">Orta</div>
+                    </div>
+                    <div class="stat-box low">
+                        <div class="stat-val">2</div>
+                        <div class="stat-label">Düşük</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card score-card">
+                <div class="gauge-container">
+                    <svg class="gauge-svg" width="160" height="160" viewBox="0 0 160 160">
+                        <circle class="gauge-bg" cx="80" cy="80" r="70"></circle>
+                        <circle class="gauge-fill" id="scoreGauge" cx="80" cy="80" r="70"></circle>
+                    </svg>
+                    <div class="gauge-text">
+                        <span class="gauge-score">35</span>
+                        <span class="gauge-max">/ 100</span>
+                    </div>
+                </div>
+                <div class="score-status">ZAYIF GÜVENLİK</div>
+                <p class="score-desc">Kritik path traversal ve yüksek XSS zafiyetleri nedeniyle sistem yüksek risk altındadır.</p>
+            </div>
+        </div>
+
+        <!-- Filter and Search -->
+        <div class="filter-section">
+            <div class="filter-buttons">
+                <button class="filter-btn active" data-filter="all">Tümü (7)</button>
+                <button class="filter-btn" data-filter="crit-high">Kritik & Yüksek (2)</button>
+                <button class="filter-btn" data-filter="medium">Orta (3)</button>
+                <button class="filter-btn" data-filter="low">Düşük (2)</button>
+            </div>
+            <div class="search-box">
+                <input type="text" class="search-input" id="searchInput" placeholder="Zafiyet başlığı veya dosya ara...">
+            </div>
+        </div>
+
+        <!-- Findings Accordion -->
+        <div class="findings-list" id="findingsList">
+
+            <!-- Finding 1: Path Traversal -->
+            <div class="finding-item crit-border" data-severity="critical">
+                <div class="finding-header">
+                    <div class="finding-meta">
+                        <div class="finding-title-row">
+                            <span class="badge crit-badge">Kritik</span>
+                            <span class="finding-title">strings.HasPrefix Mantık Hatası ile Dizin Geçişi (Path Traversal)</span>
+                        </div>
+                        <div class="finding-location">utils/pathutils.go – ResolvePath()</div>
+                    </div>
+                    <div class="toggle-icon">▼</div>
+                </div>
+                <div class="finding-content">
+                    <div class="section-block">
+                        <div class="section-title">Açıklama</div>
+                        <p class="desc-text">
+                            <code>ResolvePath</code> fonksiyonu, çözümlenen dosya yolunun (<code>absPath</code>) izin verilen kök dizin (<code>absRoot</code>) sınırlarında kalıp kalmadığını <code>strings.HasPrefix(absPath, absRoot)</code> kontrolüyle denetler. Ancak kök dizinin sonuna bir dizin sınırlandırıcı (slash) eklenmediği için, aynı isim önekiyle başlayan yan dizinlere erişim sağlanabilmektedir. Örneğin root dizini <code>/app/files</code> ise, <code>/app/files-secret/keys.txt</code> dosyası bu kontrolü aşar çünkü <code>/app/files-secret</code> dizesi <code>/app/files</code> ile başlar.
+                        </p>
+                    </div>
+                    <div class="section-block">
+                        <div class="section-title">Zayıf Kod Bloğu</div>
+                        <div class="code-block-wrapper">
+                            <div class="code-header"><span>Go</span><span>utils/pathutils.go</span></div>
+                            <pre class="code-body"><code>func ResolvePath(rootDir, requestPath string) (string, error) {
+    // ... yol temizleme işlemleri ...
+    absPath = filepath.ToSlash(absPath)
+    absRoot = filepath.ToSlash(absRoot)
+
+    // ZAFİYETLİ KONTROL: absRoot sonuna "/" eklenmediği için yan klasörlere traversal yapılabilir
+    if !strings.HasPrefix(absPath, absRoot) {
+        return "", fmt.Errorf("path traversal detected: %s is outside root %s", requestPath, rootDir)
+    }
+    return filepath.FromSlash(absPath), nil
+}</code></pre>
+                        </div>
+                    </div>
+                    <div class="section-block">
+                        <div class="section-title">Çözüm Önerisi (Remediation)</div>
+                        <div class="remediation-box">
+                            <p style="margin-bottom: 8px;"><code>absPath</code> değerinin tam olarak <code>absRoot</code> değerine eşit olduğunu veya <code>absRoot + "/"</code> ile başladığını kontrol edin:</p>
+                            <div class="code-block-wrapper">
+                                <pre class="code-body"><code>// GÜVENLİ KONTROL
+if absPath != absRoot && !strings.HasPrefix(absPath, absRoot + "/") {
+    return "", fmt.Errorf("path traversal detected")
+}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Finding 2: Media Streaming XSS -->
+            <div class="finding-item high-border" data-severity="high">
+                <div class="finding-header">
+                    <div class="finding-meta">
+                        <div class="finding-title-row">
+                            <span class="badge high-badge">Yüksek</span>
+                            <span class="finding-title">APIMediaStream Üzerinden Stored XSS ve SVG Enjeksiyonu</span>
+                        </div>
+                        <div class="finding-location">handlers/media.go – APIMediaStream()</div>
+                    </div>
+                    <div class="toggle-icon">▼</div>
+                </div>
+                <div class="finding-content">
+                    <div class="section-block">
+                        <div class="section-title">Açıklama</div>
+                        <p class="desc-text">
+                            <code>APIMediaStream</code> endpoint'i medya dosyalarını oynatmak veya akış sağlamak amacıyla tasarlanmıştır. Ancak, istemcinin talep ettiği dosyanın uzantısına yönelik hiçbir sınırlandırma (whitelist) uygulanmamaktadır. Bir saldırgan HTML dosyası veya içinde zararlı JavaScript kodu barındıran SVG dosyası yükleyebilir. Bu SVG veya HTML dosyası akış API'si üzerinden istendiğinde, sunucu <code>Content-Type: image/svg+xml</code> veya <code>text/html</code> header'ı ile yanıt dönecek ve tarayıcı JavaScript kodunu kurbanın oturum bağlamında çalıştıracaktır.
+                        </p>
+                    </div>
+                    <div class="section-block">
+                        <div class="section-title">Zayıf Kod Bloğu</div>
+                        <div class="code-block-wrapper">
+                            <div class="code-header"><span>Go</span><span>handlers/media.go</span></div>
+                            <pre class="code-body"><code>func APIMediaStream(c *fiber.Ctx) error {
+    // ... yetki ve path çözümleme ...
+    fileSize := stat.Size()
+    mimeType := utils.GetMimeType(filePath) // Güvenli olmayan MIME ataması (örn: text/html)
+
+    rangeHeader := c.Get("Range")
+    if rangeHeader != "" {
+        return handleRangeRequest(c, file, fileSize, mimeType, rangeHeader)
+    }
+
+    c.Set("Content-Type", mimeType)
+    return c.SendFile(fullPath) // HTML/SVG doğrudan tarayıcıda render edilir (XSS)
+}</code></pre>
+                        </div>
+                    </div>
+                    <div class="section-block">
+                        <div class="section-title">Çözüm Önerisi (Remediation)</div>
+                        <div class="remediation-box">
+                            <p style="margin-bottom: 8px;"><code>APIMediaStream</code> içindeki dosya türlerini sadece geçerli ses ve video formatları ile sınırlandırın (Örn: mp3, mp4, webm, wav). SVG ve HTML dosyalarının bu kanal üzerinden sunulmasını kesinlikle engelleyin. Ayrıca genel dosyaları sunarken <code>Content-Disposition: attachment</code> header'ını kullanarak dosyaların tarayıcıda çalışmasını engelleyin.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Finding 3: File Upload Lack of Extension Whitelist -->
+            <div class="finding-item med-border" data-severity="medium">
+                <div class="finding-header">
+                    <div class="finding-meta">
+                        <div class="finding-title-row">
+                            <span class="badge med-badge">Orta</span>
+                            <span class="finding-title">Dosya Yükleme İşleminde Uzantı & Tip Filtrelemesi Eksikliği</span>
+                        </div>
+                        <div class="finding-location">handlers/file.go – APIUploadFile()</div>
+                    </div>
+                    <div class="toggle-icon">▼</div>
+                </div>
+                <div class="finding-content">
+                    <div class="section-block">
+                        <div class="section-title">Açıklama</div>
+                        <p class="desc-text">
+                            Uygulamanın dosya yükleme API'si (<code>APIUploadFile</code>), yüklenen dosyaların uzantılarını veya içerik tiplerini (MIME Type) herhangi bir filtrelemeye (whitelist/blacklist) tabi tutmamaktadır. Her ne kadar Go tabanlı backend bu dosyaları sunucu tarafında doğrudan çalıştırmasa da, bu durum Stored XSS saldırılarına, sunucu disk alanının doldurulmasına ve potansiyel olarak sunucu önüne konulabilecek bir Nginx/Apache konfigürasyon hatasında Remote Code Execution (RCE) zafiyetlerine zemin hazırlar.
+                        </p>
+                    </div>
+                    <div class="section-block">
+                        <div class="section-title">Zayıf Kod Bloğu</div>
+                        <div class="code-block-wrapper">
+                            <div class="code-header"><span>Go</span><span>handlers/file.go</span></div>
+                            <pre class="code-body"><code>func APIUploadFile(c *fiber.Ctx) error {
+    // ... yetkilendirme ve form alma ...
+    files := form.File["files"]
+    for _, file := range files {
+        destPath := filepath.Join(uploadPath, file.Filename)
+        fullDest, err := utils.ResolvePath(rootDir, destPath)
+        // ...
+        // UYARI: Dosya uzantısı (.html, .svg, .exe, .sh vb.) kontrol edilmeden kaydediliyor
+        if err := c.SaveFile(file, fullDest); err != nil {
+            continue
+        }
+    }
+}</code></pre>
+                        </div>
+                    </div>
+                    <div class="section-block">
+                        <div class="section-title">Çözüm Önerisi (Remediation)</div>
+                        <div class="remediation-box">
+                            <p>Uygulamanın amacına göre bir dosya uzantısı izin verilenler listesi (Whitelist) oluşturun. Tehlikeli uzantıların (.html, .htm, .svg, .jsp, .asp, .php, .exe, .sh, .bat) yüklenmesini engelleyin veya yüklenen dosyaları kullanıcıya sunarken kesinlikle tarayıcıda çalışmayacak şekilde (attachment olarak) yapılandırın.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Finding 4: CSRF Double Submit Cookie Vulnerability -->
+            <div class="finding-item med-border" data-severity="medium">
+                <div class="finding-header">
+                    <div class="finding-meta">
+                        <div class="finding-title-row">
+                            <span class="badge med-badge">Orta</span>
+                            <span class="finding-title">CSRF Token'ının Oturum ile İlişkilendirilmemesi (Double Submit)</span>
+                        </div>
+                        <div class="finding-location">auth/middleware.go – CSRFMiddleware()</div>
+                    </div>
+                    <div class="toggle-icon">▼</div>
+                </div>
+                <div class="finding-content">
+                    <div class="section-block">
+                        <div class="section-title">Açıklama</div>
+                        <p class="desc-text">
+                            Uygulama, CSRF saldırılarını engellemek için Double Submit Cookie desenini kullanmaktadır. Ancak, <code>csrf_token</code> çerezi veritabanındaki kullanıcı oturumuyla (session) hiçbir şekilde ilişkilendirilmemiştir. Sadece istemci çerezindeki değer ile istek başlığındaki (<code>X-CSRF-Token</code>) değerin eşleşip eşleşmediği kontrol edilmektedir. Eğer saldırgan, hedef alan adının herhangi bir alt alan adını (subdomain) kontrol edebiliyorsa veya Man-in-the-Middle (MITM) / XSS yoluyla kurbana yapay bir CSRF çerezi enjekte edebiliyorsa, bu korumayı kolayca atlatabilir.
+                        </p>
+                    </div>
+                    <div class="section-block">
+                        <div class="section-title">Zayıf Kod Bloğu</div>
+                        <div class="code-block-wrapper">
+                            <div class="code-header"><span>Go</span><span>auth/middleware.go</span></div>
+                            <pre class="code-body"><code>func CSRFMiddleware(c *fiber.Ctx) error {
+    csrfToken := c.Cookies("csrf_token")
+    // ... token oluşturma ve set etme ...
+    
+    // ZAFİYETLİ KONTROL: Token session bazlı doğrulanmıyor, sadece cookie ve header eşitliği aranıyor
+    requestToken := c.Get("X-CSRF-Token")
+    if requestToken == "" || requestToken != csrfToken {
+        return utils.SendError(c, fiber.StatusForbidden, "Geçersiz CSRF token")
+    }
+    return c.Next()
+}</code></pre>
+                        </div>
+                    </div>
+                    <div class="section-block">
+                        <div class="section-title">Çözüm Önerisi (Remediation)</div>
+                        <div class="remediation-box">
+                            <p>CSRF token'larını veritabanındaki veya hafızadaki session nesneleri içine kaydedin. İstek geldiğinde, form veya header ile gönderilen CSRF token değerini cookie ile değil, kullanıcının aktif oturumundaki (Session tabanlı) token değeri ile karşılaştırın.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Finding 5: Search DoS -->
+            <div class="finding-item med-border" data-severity="medium">
+                <div class="finding-header">
+                    <div class="finding-meta">
+                        <div class="finding-title-row">
+                            <span class="badge med-badge">Orta</span>
+                            <span class="finding-title">Dosya Arama API'sinde Disk I/O Tüketimi (Resource Exhaustion)</span>
+                        </div>
+                        <div class="finding-location">handlers/search.go – APISearch()</div>
+                    </div>
+                    <div class="toggle-icon">▼</div>
+                </div>
+                <div class="finding-content">
+                    <div class="section-block">
+                        <div class="section-title">Açıklama</div>
+                        <p class="desc-text">
+                            <code>APISearch</code> fonksiyonu arama işlemi yaparken disk üzerindeki tüm dizin ağacını <code>filepath.Walk</code> fonksiyonu ile baştan sona taramaktadır. Arama işlemi veritabanı indeksleri yerine doğrudan disk I/O operasyonuyla gerçekleştirilmektedir. Geniş dosya sistemlerinde veya çok sayıda dosya barındıran sunucularda, bu endpoint'e gönderilecek ardışık veya eş zamanlı arama istekleri CPU ve disk I/O limitlerini tüketerek sunucunun kilitlenmesine (Denial of Service - DoS) neden olur.
+                        </p>
+                    </div>
+                    <div class="section-block">
+                        <div class="section-title">Zayıf Kod Bloğu</div>
+                        <div class="code-block-wrapper">
+                            <div class="code-header"><span>Go</span><span>handlers/search.go</span></div>
+                            <pre class="code-body"><code>func APISearch(c *fiber.Ctx) error {
+    // ...
+    // TEHLİKELİ OPERASYON: Her arama isteğinde diski tarar
+    filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
+        // ... filtreleme ve eşleştirme ...
+        return nil
+    })
+    // ...
+}</code></pre>
+                        </div>
+                    </div>
+                    <div class="section-block">
+                        <div class="section-title">Çözüm Önerisi (Remediation)</div>
+                        <div class="remediation-box">
+                            <p>Dosya sistemini periyodik olarak arka planda indeksleyen bir yapı kurun ve aramaları bu indeks (bellek veya SQLite) üzerinden gerçekleştirin. Alternatif olarak, arama derinliğini sınırlayın ve arama işlemleri için çok daha katı bir rate-limiting uygulayın.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Finding 6: Secure Flag Cookie Missing -->
+            <div class="finding-item low-border" data-severity="low">
+                <div class="finding-header">
+                    <div class="finding-meta">
+                        <div class="finding-title-row">
+                            <span class="badge low-badge">Düşük</span>
+                            <span class="finding-title">Oturum Çerezlerinde 'Secure' Bayrağının Eksikliği</span>
+                        </div>
+                        <div class="finding-location">auth/auth.go – HandleLogin() / HandleLoginAPI()</div>
+                    </div>
+                    <div class="toggle-icon">▼</div>
+                </div>
+                <div class="finding-content">
+                    <div class="section-block">
+                        <div class="section-title">Açıklama</div>
+                        <p class="desc-text">
+                            Oturum doğrulaması için kullanılan <code>session_token</code> çerezi oluşturulurken <code>Secure: false</code> olarak set edilmiştir. Bu durum, uygulama HTTPS (SSL/TLS) protokolü üzerinden çalıştırılsa bile, çerezin tarayıcı tarafından şifrelenmemiş HTTP bağlantıları üzerinden de gönderilmesine neden olur. Bu durum ağ trafiğini izleyen bir saldırganın (Man-in-the-Middle) oturum çerezini ele geçirmesini kolaylaştırır.
+                        </p>
+                    </div>
+                    <div class="section-block">
+                        <div class="section-title">Zayıf Kod Bloğu</div>
+                        <div class="code-block-wrapper">
+                            <div class="code-header"><span>Go</span><span>auth/auth.go</span></div>
+                            <pre class="code-body"><code>c.Cookie(&fiber.Cookie{
+    Name:     "session_token",
+    Value:    session.Token,
+    Path:     "/",
+    MaxAge:   7 * 24 * 60 * 60,
+    HTTPOnly: true,
+    Secure:   false, // UYARI: HTTPS altında bile çerez güvensiz iletilebilir
+    SameSite: "Lax",
+})</code></pre>
+                        </div>
+                    </div>
+                    <div class="section-block">
+                        <div class="section-title">Çözüm Önerisi (Remediation)</div>
+                        <div class="remediation-box">
+                            <p>Çerez ayarlarında <code>Secure</code> parametresini <code>true</code> yapın. Eğer uygulamanın lokalde (HTTP) geliştirilme aşamasında çalışması gerekiyorsa, bunu konfigürasyon dosyasından (örneğin bir config parametresi veya Environment Variable ile) dinamik olarak yönetin.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Finding 7: Windows Backslash Trash Traversal -->
+            <div class="finding-item low-border" data-severity="low">
+                <div class="finding-header">
+                    <div class="finding-meta">
+                        <div class="finding-title-row">
+                            <span class="badge low-badge">Düşük</span>
+                            <span class="finding-title">Windows İşletim Sistemlerinde Backslash (\) Kontrol Eksikliği</span>
+                        </div>
+                        <div class="finding-location">services/trashservice.go – RestoreFromTrash()</div>
+                    </div>
+                    <div class="toggle-icon">▼</div>
+                </div>
+                <div class="finding-content">
+                    <div class="section-block">
+                        <div class="section-title">Açıklama</div>
+                        <p class="desc-text">
+                            Çöp kutusundan dosya silme veya geri yükleme işlemleri esnasında kullanılan <code>trashID</code> parametresi, dizin geçişlerini engellemek için <code>strings.Contains(trashID, "/")</code> ve <code>".."</code> kontrollerinden geçirilir. Ancak Windows işletim sistemlerinde ters slash (<code>\</code>) karakteri de geçerli bir dizin ayıracıdır ve bu karakter filtrelerde yer almamaktadır. Her ne kadar <code>..</code> kontrolü sayesinde üst dizine çıkılması zorlaştırılsa da, Windows sunucularda beklenmeyen alt dizin yönlendirmelerine sebebiyet verebilir.
+                        </p>
+                    </div>
+                    <div class="section-block">
+                        <div class="section-title">Zayıf Kod Bloğu</div>
+                        <div class="code-block-wrapper">
+                            <div class="code-header"><span>Go</span><span>services/trashservice.go</span></div>
+                            <pre class="code-body"><code>func RestoreFromTrash(trashBaseDir, rootDir, username, trashID string) error {
+    // ...
+    // EKSİK FİLTRE: Windows sistemlerdeki "\\" kontrolü yapılmamıştır
+    if strings.Contains(trashID, "..") || strings.Contains(trashID, "/") {
+        return fmt.Errorf("invalid trash ID")
+    }
+    // ...
+}</code></pre>
+                        </div>
+                    </div>
+                    <div class="section-block">
+                        <div class="section-title">Çözüm Önerisi (Remediation)</div>
+                        <div class="remediation-box">
+                            <p>Zafiyetli satırı Windows dizin ayracını da kapsayacak şekilde güncelleyin:</p>
+                            <div class="code-block-wrapper">
+                                <pre class="code-body"><code>if strings.Contains(trashID, "..") || strings.Contains(trashID, "/") || strings.Contains(trashID, "\\") {
+    return fmt.Errorf("invalid trash ID")
+}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <footer>
+            <div class="footer-logo">🛡️ ANTIGRAVITY SECURITY</div>
+            <p>© 2026 Antigravity AI. Tüm hakları saklıdır. Bu rapor otomatik kod analizi ve siber güvenlik denetimi kapsamında üretilmiştir.</p>
+        </footer>
+    </div>
+
+    <!-- Interactive JS Logic -->
+    <script>
+        // Collapsible Accordion Logic
+        document.querySelectorAll('.finding-header').forEach(header => {
+            header.addEventListener('click', () => {
+                const item = header.parentElement;
+                const content = item.querySelector('.finding-content');
+                
+                if (item.classList.contains('open')) {
+                    content.style.display = 'none';
+                    item.classList.remove('open');
+                } else {
+                    content.style.display = 'block';
+                    item.classList.add('open');
+                }
+            });
+        });
+
+        // Theme Toggle Logic
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+        const themeIcon = themeToggleBtn.querySelector('span');
+        
+        // Load initial theme from localStorage or default to dark
+        const currentTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', currentTheme);
+        updateThemeButtonUI(currentTheme);
+
+        themeToggleBtn.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeButtonUI(newTheme);
+        });
+
+        function updateThemeButtonUI(theme) {
+            if (theme === 'dark') {
+                themeToggleBtn.innerHTML = '<span>☀️</span> Light Mode';
+            } else {
+                themeToggleBtn.innerHTML = '<span>🌙</span> Dark Mode';
+            }
+        }
+
+        // Filtering Logic
+        const filterButtons = document.querySelectorAll('.filter-btn');
+        const findingItems = document.querySelectorAll('.finding-item');
+
+        filterButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Remove active class from all buttons
+                filterButtons.forEach(b => b.classList.remove('active'));
+                // Add active class to clicked button
+                btn.classList.add('active');
+
+                const filterValue = btn.getAttribute('data-filter');
+
+                findingItems.forEach(item => {
+                    const severity = item.getAttribute('data-severity');
+                    
+                    if (filterValue === 'all') {
+                        item.style.display = 'block';
+                    } else if (filterValue === 'crit-high') {
+                        if (severity === 'critical' || severity === 'high') {
+                            item.style.display = 'block';
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    } else if (filterValue === 'medium') {
+                        if (severity === 'medium') {
+                            item.style.display = 'block';
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    } else if (filterValue === 'low') {
+                        if (severity === 'low') {
+                            item.style.display = 'block';
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    }
+                });
+            });
+        });
+
+        // Search Logic
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+
+            findingItems.forEach(item => {
+                const title = item.querySelector('.finding-title').textContent.toLowerCase();
+                const location = item.querySelector('.finding-location').textContent.toLowerCase();
+                
+                if (title.includes(term) || location.includes(term)) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+
+        // Animate gauge score on load
+        window.addEventListener('DOMContentLoaded', () => {
+            const gauge = document.getElementById('scoreGauge');
+            // Animate stroke dashoffset from 440 to 286 (Score 35)
+            setTimeout(() => {
+                gauge.style.strokeDashoffset = '286';
+            }, 300);
+        });
+    </script>
+</body>
+</html>
