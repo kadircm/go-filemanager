@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Paneli - Go File Manager</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<div class="app-layout">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo">📁</div>
+            <span class="sidebar-title">File Manager</span>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-section">
+                <div class="nav-section-title">Navigasyon</div>
+                <a href="/files/" class="nav-item"><span class="icon">📂</span><span>Dosyalar</span></a>
+                <a href="/trash/" class="nav-item"><span class="icon">🗑️</span><span>Çöp Kutusu</span></a>
+                <a href="/search/" class="nav-item"><span class="icon">🔍</span><span>Arama</span></a>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Yönetim</div>
+                <a href="/admin/" class="nav-item active"><span class="icon">⚙️</span><span>Admin Paneli</span></a>
+            </div>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="user-card">
+                <div class="user-avatar">{{if .User}}{{slice .User.Username 0 1}}{{end}}</div>
+                <div class="user-info">
+                    <div class="user-name">{{if .User}}{{.User.Username}}{{end}}</div>
+                    <div class="user-role">{{if .User}}{{.User.Role}}{{end}}</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="header">
+            <button class="mobile-menu-toggle" onclick="toggleSidebar()">☰</button>
+            <nav class="breadcrumb">
+                <span class="breadcrumb-item active">⚙️ Admin Paneli</span>
+            </nav>
+            <div class="header-actions">
+                <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+            </div>
+        </header>
+
+        <div class="content-area">
+            <h2 style="font-size: 1.3rem; font-weight: 600; margin-bottom: 20px;">⚙️ Yönetim Paneli</h2>
+            <div class="admin-grid">
+                <div class="admin-section">
+                    <div class="admin-section-header">
+                        <h3 class="admin-section-title">👥 Kullanıcılar</h3>
+                        <button class="btn btn-primary btn-sm" onclick="showCreateUserModal()">+ Kullanıcı Ekle</button>
+                    </div>
+                    <div class="admin-section-body">
+                        {{range .Users}}
+                        <div class="user-list-item">
+                            <div class="user-avatar">{{slice .Username 0 1}}</div>
+                            <div class="flex-1">
+                                <div class="user-name">{{.Username}}</div>
+                                <div class="user-role">{{.Role}} · {{.RootDir}}</div>
+                            </div>
+                            <div class="flex gap-1">
+                                <button class="btn btn-ghost btn-sm" onclick="editUser({{.ID}}, '{{.Username}}', '{{.Role}}', '{{.RootDir}}')">✏️</button>
+                                <button class="btn btn-ghost btn-sm text-danger" onclick="deleteUser({{.ID}}, '{{.Username}}')">🗑️</button>
+                            </div>
+                        </div>
+                        {{end}}
+                    </div>
+                </div>
+
+                <div class="admin-section">
+                    <div class="admin-section-header">
+                        <h3 class="admin-section-title">📋 Aktivite Günlüğü</h3>
+                    </div>
+                    <div class="admin-section-body">
+                        {{if .AuditLogs}}
+                        {{range .AuditLogs}}
+                        <div class="audit-item">
+                            <div>
+                                <span class="audit-action">{{.Action}}</span>
+                                <strong>{{.Username}}</strong>
+                                {{if .ResourcePath}}<br><span class="mono text-muted" style="font-size: 0.75rem;">{{.ResourcePath}}</span>{{end}}
+                            </div>
+                            <div class="audit-time" style="white-space: nowrap; margin-left: auto;">{{.CreatedAt}}</div>
+                        </div>
+                        {{end}}
+                        {{else}}
+                        <div class="text-center text-muted" style="padding: 20px;">Henüz aktivite kaydı yok</div>
+                        {{end}}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title" id="modalTitle">Modal</h3>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body" id="modalBody"></div>
+        <div class="modal-footer" id="modalFooter"></div>
+    </div>
+</div>
+<div class="toast-container" id="toastContainer"></div>
+
+<script>window.csrfToken = "{{.CSRFToken}}";</script>
+<script src="/static/js/app.js"></script>
+<script>
+function showCreateUserModal() {
+    document.getElementById('modalTitle').textContent = 'Yeni Kullanıcı Oluştur';
+    document.getElementById('modalBody').innerHTML = '<div class="form-group"><label class="form-label">Kullanıcı Adı</label><input type="text" class="form-input" id="newUsername" placeholder="Kullanıcı adı"></div><div class="form-group"><label class="form-label">Şifre</label><input type="password" class="form-input" id="newPassword" placeholder="Şifre"></div><div class="form-group"><label class="form-label">Rol</label><select class="form-select" id="newRole"><option value="user">User</option><option value="admin">Admin</option></select></div><div class="form-group"><label class="form-label">Root Dizin</label><input type="text" class="form-input" id="newRootDir" value="/"></div>';
+    document.getElementById('modalFooter').innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">İptal</button><button class="btn btn-primary" onclick="createUser()">Oluştur</button>';
+    document.getElementById('modalOverlay').classList.add('active');
+}
+
+async function createUser() {
+    const res = await fetch('/api/admin/users', {method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':window.csrfToken,'X-Requested-With':'XMLHttpRequest'},body:JSON.stringify({username:document.getElementById('newUsername').value,password:document.getElementById('newPassword').value,role:document.getElementById('newRole').value,root_dir:document.getElementById('newRootDir').value})});
+    const r = await res.json();
+    if(r.success){showToast('Kullanıcı oluşturuldu','success');closeModal();setTimeout(()=>location.reload(),500);}else{showToast(r.error,'error');}
+}
+
+function editUser(id,username,role,rootDir) {
+    document.getElementById('modalTitle').textContent = 'Düzenle: ' + username;
+    document.getElementById('modalBody').innerHTML = '<div class="form-group"><label class="form-label">Rol</label><select class="form-select" id="editRole"><option value="user" '+(role==='user'?'selected':'')+'>User</option><option value="admin" '+(role==='admin'?'selected':'')+'>Admin</option></select></div><div class="form-group"><label class="form-label">Root Dizin</label><input type="text" class="form-input" id="editRootDir" value="'+rootDir+'"></div><div class="form-group"><label class="form-label">Yeni Şifre (opsiyonel)</label><input type="password" class="form-input" id="editPassword"></div>';
+    document.getElementById('modalFooter').innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">İptal</button><button class="btn btn-primary" onclick="updateUser('+id+')">Güncelle</button>';
+    document.getElementById('modalOverlay').classList.add('active');
+}
+
+async function updateUser(id) {
+    const res = await fetch('/api/admin/users/'+id, {method:'PUT',headers:{'Content-Type':'application/json','X-CSRF-Token':window.csrfToken,'X-Requested-With':'XMLHttpRequest'},body:JSON.stringify({role:document.getElementById('editRole').value,root_dir:document.getElementById('editRootDir').value,password:document.getElementById('editPassword').value})});
+    const r = await res.json();
+    if(r.success){showToast('Güncellendi','success');closeModal();setTimeout(()=>location.reload(),500);}else{showToast(r.error,'error');}
+}
+
+async function deleteUser(id,username) {
+    if(!confirm(username+' silinsin mi?'))return;
+    const res = await fetch('/api/admin/users/'+id, {method:'DELETE',headers:{'X-CSRF-Token':window.csrfToken,'X-Requested-With':'XMLHttpRequest'}});
+    const r = await res.json();
+    if(r.success){showToast('Silindi','success');setTimeout(()=>location.reload(),500);}else{showToast(r.error,'error');}
+}
+
+function closeModal(){document.getElementById('modalOverlay').classList.remove('active');}
+</script>
+</body>
+</html>

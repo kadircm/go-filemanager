@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editör - Go File Manager</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/dracula.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/dialog/dialog.min.css">
+</head>
+<body>
+<div class="app-layout">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo">📁</div>
+            <span class="sidebar-title">File Manager</span>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-section">
+                <div class="nav-section-title">Navigasyon</div>
+                <a href="/files/" class="nav-item"><span class="icon">📂</span><span>Dosyalar</span></a>
+                <a href="/trash/" class="nav-item"><span class="icon">🗑️</span><span>Çöp Kutusu</span></a>
+                <a href="/search/" class="nav-item"><span class="icon">🔍</span><span>Arama</span></a>
+            </div>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="user-card">
+                <div class="user-avatar">{{if .User}}{{slice .User.Username 0 1}}{{end}}</div>
+                <div class="user-info">
+                    <div class="user-name">{{if .User}}{{.User.Username}}{{end}}</div>
+                    <div class="user-role">{{if .User}}{{.User.Role}}{{end}}</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="header">
+            <button class="mobile-menu-toggle" onclick="toggleSidebar()">☰</button>
+            <nav class="breadcrumb">
+                <a href="/files/" class="breadcrumb-item">Ana Dizin</a>
+                <span class="breadcrumb-separator">›</span>
+                <span class="breadcrumb-item active">✏️ {{.FileName}}</span>
+            </nav>
+            <div class="header-actions">
+                <button class="btn btn-primary btn-sm" onclick="saveFile()" id="btnSave">💾 Kaydet (Ctrl+S)</button>
+                <button class="btn btn-secondary btn-sm" onclick="history.back()">← Geri</button>
+                <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+            </div>
+        </header>
+
+        <div class="editor-container">
+            <div class="editor-toolbar">
+                <span class="editor-filename">{{.Path}}</span>
+                <span class="text-muted" id="editorStatus">Hazır</span>
+            </div>
+            <div class="editor-wrapper">
+                <textarea id="codeEditor" style="display:none;">{{.Content}}</textarea>
+                <div id="editorMount" style="height: 100%;"></div>
+            </div>
+        </div>
+    </main>
+</div>
+<div class="toast-container" id="toastContainer"></div>
+<script>
+    window.filePath = "{{.Path}}";
+    window.fileMode = "{{.Mode}}";
+    window.csrfToken = "{{.CSRFToken}}";
+</script>
+<script src="/static/js/app.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/dialog/dialog.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/search/search.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/search/searchcursor.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/go/go.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/htmlmixed/htmlmixed.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/css/css.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/xml/xml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/sql/sql.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/shell/shell.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/php/php.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/yaml/yaml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/markdown/markdown.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/clike/clike.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/dockerfile/dockerfile.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const modeMap = {
+        'go': 'text/x-go', 'python': 'text/x-python', 'javascript': 'text/javascript',
+        'html': 'text/html', 'css': 'text/css', 'json': 'application/json',
+        'xml': 'text/xml', 'yaml': 'text/x-yaml', 'markdown': 'text/x-markdown',
+        'sql': 'text/x-sql', 'shell': 'text/x-sh', 'php': 'text/x-php',
+        'java': 'text/x-java', 'cpp': 'text/x-c++src', 'dockerfile': 'text/x-dockerfile',
+        'plaintext': 'text/plain'
+    };
+    const cmMode = modeMap[window.fileMode] || 'text/plain';
+    const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+
+    window.editor = CodeMirror.fromTextArea(document.getElementById('codeEditor'), {
+        mode: cmMode,
+        theme: isDark ? 'dracula' : 'default',
+        lineNumbers: true,
+        matchBrackets: true,
+        autoCloseBrackets: true,
+        indentUnit: 4,
+        tabSize: 4,
+        extraKeys: {
+            "Ctrl-S": function() { saveFile(); },
+            "Cmd-S": function() { saveFile(); }
+        }
+    });
+    window.editor.setSize('100%', '100%');
+    window.editor.on('change', function() {
+        document.getElementById('editorStatus').textContent = '● Değiştirildi';
+        document.getElementById('editorStatus').style.color = 'var(--warning)';
+    });
+});
+
+async function saveFile() {
+    const content = window.editor.getValue();
+    const statusEl = document.getElementById('editorStatus');
+    statusEl.textContent = 'Kaydediliyor...';
+    statusEl.style.color = 'var(--info)';
+    try {
+        const res = await fetch('/api/editor/save', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRF-Token': window.csrfToken, 'X-Requested-With': 'XMLHttpRequest'},
+            body: JSON.stringify({path: window.filePath, content: content})
+        });
+        const data = await res.json();
+        if (data.success) {
+            statusEl.textContent = '✓ Kaydedildi';
+            statusEl.style.color = 'var(--success)';
+            showToast('Dosya kaydedildi', 'success');
+        } else {
+            statusEl.textContent = '✕ Hata';
+            statusEl.style.color = 'var(--danger)';
+            showToast(data.error || 'Kaydetme hatası', 'error');
+        }
+    } catch(e) {
+        statusEl.textContent = '✕ Bağlantı hatası';
+        statusEl.style.color = 'var(--danger)';
+    }
+}
+</script>
+</body>
+</html>

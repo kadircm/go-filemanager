@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Çöp Kutusu - Go File Manager</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<div class="app-layout">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo">📁</div>
+            <span class="sidebar-title">File Manager</span>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-section">
+                <div class="nav-section-title">Navigasyon</div>
+                <a href="/files/" class="nav-item"><span class="icon">📂</span><span>Dosyalar</span></a>
+                <a href="/trash/" class="nav-item active"><span class="icon">🗑️</span><span>Çöp Kutusu</span>{{if .TrashCount}}<span class="nav-badge">{{.TrashCount}}</span>{{end}}</a>
+                <a href="/search/" class="nav-item"><span class="icon">🔍</span><span>Arama</span></a>
+            </div>
+            {{if .User}}{{if .User.IsAdmin}}
+            <div class="nav-section">
+                <div class="nav-section-title">Yönetim</div>
+                <a href="/admin/" class="nav-item"><span class="icon">⚙️</span><span>Admin Paneli</span></a>
+            </div>
+            {{end}}{{end}}
+        </nav>
+        <div class="sidebar-footer">
+            <div class="user-card">
+                <div class="user-avatar">{{if .User}}{{slice .User.Username 0 1}}{{end}}</div>
+                <div class="user-info">
+                    <div class="user-name">{{if .User}}{{.User.Username}}{{end}}</div>
+                    <div class="user-role">{{if .User}}{{.User.Role}}{{end}}</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="header">
+            <button class="mobile-menu-toggle" onclick="toggleSidebar()">☰</button>
+            <nav class="breadcrumb">
+                <span class="breadcrumb-item active">🗑️ Çöp Kutusu</span>
+            </nav>
+            <div class="header-actions">
+                <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+            </div>
+        </header>
+
+        <div class="content-area">
+            <div class="trash-header">
+                <h2 class="trash-title">🗑️ Çöp Kutusu <span class="trash-count">{{.TrashCount}} öğe</span></h2>
+                {{if .Items}}
+                <button class="btn btn-danger btn-sm" onclick="emptyTrash()">🗑️ Çöp Kutusunu Boşalt</button>
+                {{end}}
+            </div>
+
+            {{if .Items}}
+            <table class="file-table">
+                <thead>
+                    <tr>
+                        <th>Ad</th>
+                        <th style="width: 200px;">Orijinal Konum</th>
+                        <th style="width: 100px;">Boyut</th>
+                        <th style="width: 160px;">Silinme Tarihi</th>
+                        <th style="width: 160px;">İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .Items}}
+                    <tr>
+                        <td>
+                            <div class="file-name-cell">
+                                <div class="file-icon {{if .IsDir}}folder{{else}}other{{end}}">{{if .IsDir}}📁{{else}}📄{{end}}</div>
+                                <span class="file-name">{{.Name}}</span>
+                            </div>
+                        </td>
+                        <td class="file-date mono" style="font-size: 0.78rem;">{{.OriginalPath}}</td>
+                        <td class="file-size">{{.SizeHuman}}</td>
+                        <td class="file-date">{{.DeletedAtStr}}</td>
+                        <td>
+                            <div class="trash-item-actions">
+                                <button class="btn btn-success btn-sm" onclick="restoreItem('{{.ID}}')">↩️ Geri Yükle</button>
+                                <button class="btn btn-danger btn-sm" onclick="deletePermanent('{{.ID}}')">✕</button>
+                            </div>
+                        </td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+            {{else}}
+            <div class="trash-empty-state">
+                <div class="trash-empty-icon">🗑️</div>
+                <div class="empty-title">Çöp kutusu boş</div>
+                <div class="empty-text">Silinen dosyalar burada görünecek</div>
+            </div>
+            {{end}}
+        </div>
+    </main>
+</div>
+<div class="toast-container" id="toastContainer"></div>
+<script>window.csrfToken = "{{.CSRFToken}}";</script>
+<script src="/static/js/app.js"></script>
+<script src="/static/js/trash.js"></script>
+</body>
+</html>

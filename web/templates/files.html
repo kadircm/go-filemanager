@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Go File Manager - Dosya Yönetimi">
+    <title>Dosyalar - Go File Manager</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo">📁</div>
+            <span class="sidebar-title">File Manager</span>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-section">
+                <div class="nav-section-title">Navigasyon</div>
+                <a href="/files/" class="nav-item active" id="navFiles">
+                    <span class="icon">📂</span><span>Dosyalar</span>
+                </a>
+                <a href="/trash/" class="nav-item" id="navTrash">
+                    <span class="icon">🗑️</span><span>Çöp Kutusu</span>
+                    {{if .TrashCount}}<span class="nav-badge">{{.TrashCount}}</span>{{end}}
+                </a>
+                <a href="/search/" class="nav-item" id="navSearch">
+                    <span class="icon">🔍</span><span>Arama</span>
+                </a>
+            </div>
+            {{if .User}}{{if .User.IsAdmin}}
+            <div class="nav-section">
+                <div class="nav-section-title">Yönetim</div>
+                <a href="/admin/" class="nav-item" id="navAdmin">
+                    <span class="icon">⚙️</span><span>Admin Paneli</span>
+                </a>
+            </div>
+            {{end}}{{end}}
+        </nav>
+        <div class="sidebar-footer">
+            <div class="user-card" id="userMenu">
+                <div class="user-avatar">{{if .User}}{{slice .User.Username 0 1}}{{end}}</div>
+                <div class="user-info">
+                    <div class="user-name">{{if .User}}{{.User.Username}}{{end}}</div>
+                    <div class="user-role">{{if .User}}{{.User.Role}}{{end}}</div>
+                </div>
+                <span style="color: var(--text-muted)">⋮</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <header class="header">
+            <button class="mobile-menu-toggle" id="menuToggle" onclick="toggleSidebar()">☰</button>
+            <nav class="breadcrumb" id="breadcrumb">
+                {{range $i, $item := .Breadcrumb}}
+                    {{if $i}}<span class="breadcrumb-separator">›</span>{{end}}
+                    <a href="/files{{$item.Path}}" class="breadcrumb-item">{{$item.Name}}</a>
+                {{end}}
+            </nav>
+            <div class="header-actions">
+                <div class="search-bar">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" class="search-input" id="quickSearch" placeholder="Dosya ara... (Ctrl+K)" autocomplete="off">
+                </div>
+                <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Tema Değiştir">🌙</button>
+            </div>
+        </header>
+
+        <div class="content-area">
+            {{if .Error}}
+            <div class="login-error" style="margin-bottom: 20px;">
+                <span>⚠</span><span>{{.Error}}</span>
+            </div>
+            {{end}}
+
+            <div class="toolbar" id="fileToolbar">
+                <div class="toolbar-group">
+                    <button class="btn btn-primary btn-sm" onclick="showNewFolderModal()" id="btnNewFolder">📁 Yeni Klasör</button>
+                    <button class="btn btn-secondary btn-sm" onclick="showNewFileModal()" id="btnNewFile">📄 Yeni Dosya</button>
+                    <button class="btn btn-secondary btn-sm" onclick="triggerUpload()" id="btnUpload">⬆️ Yükle</button>
+                </div>
+                <div class="toolbar-separator"></div>
+                <div class="toolbar-group">
+                    <button class="btn btn-ghost btn-sm" onclick="refreshFiles()" id="btnRefresh" title="Yenile">🔄</button>
+                </div>
+                <div style="flex: 1"></div>
+                <div class="view-toggle" id="viewToggle">
+                    <button class="active" onclick="setView('list')" id="viewList" title="Liste">☰</button>
+                    <button onclick="setView('grid')" id="viewGrid" title="Grid">▦</button>
+                </div>
+            </div>
+
+            <!-- List View -->
+            <div id="fileListView">
+                {{if .Files}}
+                <table class="file-table" id="fileTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;"><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
+                            <th>Ad</th>
+                            <th style="width: 100px;">Boyut</th>
+                            <th style="width: 160px;">Tarih</th>
+                            <th style="width: 100px;">İzinler</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fileTableBody">
+                        {{range .Files}}
+                        <tr class="file-row" data-path="{{.Path}}" data-name="{{.Name}}" data-isdir="{{.IsDir}}"
+                            data-category="{{.Category}}" ondblclick="openItem(this)" oncontextmenu="showContextMenu(event, this)">
+                            <td><input type="checkbox" class="file-checkbox" onchange="updateSelection()"></td>
+                            <td>
+                                <div class="file-name-cell">
+                                    <div class="file-icon {{.Category}}">
+                                        {{if .IsDir}}📁{{else if eq (printf "%s" .Category) "image"}}🖼️{{else if eq (printf "%s" .Category) "video"}}🎬{{else if eq (printf "%s" .Category) "audio"}}🎵{{else if eq (printf "%s" .Category) "code"}}💻{{else if eq (printf "%s" .Category) "document"}}📄{{else if eq (printf "%s" .Category) "archive"}}📦{{else}}📎{{end}}
+                                    </div>
+                                    <span class="file-name">{{.Name}}</span>
+                                </div>
+                            </td>
+                            <td class="file-size">{{if .IsDir}}—{{else}}{{.SizeHuman}}{{end}}</td>
+                            <td class="file-date">{{.ModTimeStr}}</td>
+                            <td class="file-permissions mono">{{.Permissions}}</td>
+                        </tr>
+                        {{end}}
+                    </tbody>
+                </table>
+                {{else}}
+                <div class="empty-state">
+                    <div class="empty-icon">📂</div>
+                    <div class="empty-title">Bu klasör boş</div>
+                    <div class="empty-text">Yeni dosya veya klasör oluşturmak için yukarıdaki butonları kullanın, ya da dosyaları sürükleyip bırakın.</div>
+                </div>
+                {{end}}
+            </div>
+
+            <!-- Grid View -->
+            <div id="fileGridView" class="hidden">
+                <div class="file-grid" id="fileGrid">
+                    {{range .Files}}
+                    <div class="file-grid-item" data-path="{{.Path}}" data-name="{{.Name}}" data-isdir="{{.IsDir}}"
+                         data-category="{{.Category}}" ondblclick="openItem(this)" oncontextmenu="showContextMenu(event, this)">
+                        <div class="file-icon {{.Category}}">
+                            {{if .IsDir}}📁{{else if eq (printf "%s" .Category) "image"}}🖼️{{else if eq (printf "%s" .Category) "video"}}🎬{{else if eq (printf "%s" .Category) "audio"}}🎵{{else if eq (printf "%s" .Category) "code"}}💻{{else if eq (printf "%s" .Category) "document"}}📄{{else if eq (printf "%s" .Category) "archive"}}📦{{else}}📎{{end}}
+                        </div>
+                        <span class="file-name">{{.Name}}</span>
+                        <span class="file-size">{{if .IsDir}}Klasör{{else}}{{.SizeHuman}}{{end}}</span>
+                    </div>
+                    {{end}}
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Upload Overlay -->
+<div class="upload-overlay" id="uploadOverlay">
+    <div class="upload-zone">
+        <div class="upload-icon">⬆️</div>
+        <div class="upload-text">Dosyaları buraya bırakın</div>
+        <div class="upload-subtext">veya yüklemek için tıklayın</div>
+        <div class="upload-progress" id="uploadProgress">
+            <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+            <div class="progress-text" id="progressText">Yükleniyor...</div>
+        </div>
+    </div>
+</div>
+<input type="file" id="fileInput" multiple style="display:none" onchange="handleFileSelect(event)">
+
+<!-- Context Menu -->
+<div class="context-menu" id="contextMenu">
+    <div class="context-item" onclick="ctxOpen()"><span class="icon">📂</span> Aç</div>
+    <div class="context-item" id="ctxEdit" onclick="ctxEdit()"><span class="icon">✏️</span> Düzenle</div>
+    <div class="context-separator"></div>
+    <div class="context-item" onclick="ctxRename()"><span class="icon">✍️</span> Yeniden Adlandır</div>
+    <div class="context-item" onclick="ctxCopy()"><span class="icon">📋</span> Kopyala</div>
+    <div class="context-item" onclick="ctxMove()"><span class="icon">📦</span> Taşı</div>
+    <div class="context-item" id="ctxDownload" onclick="ctxDownload()"><span class="icon">⬇️</span> İndir</div>
+    <div class="context-separator"></div>
+    <div class="context-item" onclick="ctxInfo()"><span class="icon">ℹ️</span> Bilgi</div>
+    <div class="context-separator"></div>
+    <div class="context-item danger" onclick="ctxDelete()"><span class="icon">🗑️</span> Sil</div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="modal">
+        <div class="modal-header">
+            <h3 class="modal-title" id="modalTitle">Modal</h3>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body" id="modalBody"></div>
+        <div class="modal-footer" id="modalFooter"></div>
+    </div>
+</div>
+
+<!-- User Dropdown -->
+<div class="context-menu" id="userDropdown">
+    <div class="context-item" onclick="showChangePasswordModal()"><span class="icon">🔑</span> Şifre Değiştir</div>
+    <div class="context-separator"></div>
+    <div class="context-item danger" onclick="location.href='/logout'"><span class="icon">🚪</span> Çıkış Yap</div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+    window.currentPath = "{{.Path}}";
+    window.csrfToken = "{{.CSRFToken}}";
+</script>
+<script src="/static/js/app.js"></script>
+<script src="/static/js/filemanager.js"></script>
+<script src="/static/js/contextmenu.js"></script>
+<script src="/static/js/upload.js"></script>
+</body>
+</html>

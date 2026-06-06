@@ -1,0 +1,40 @@
+# Binaries
+filemanager
+filemanager.exe
+filemanager-linux
+filemanager-*
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test binary
+*.test
+
+# Output
+*.out
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database
+*.db
+
+# Trash directory
+.filemanager_trash/
+.filemanager/
+
+# Go
+vendor/
+
+# Project planning
+project.md

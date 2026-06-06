@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arama - Go File Manager</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<div class="app-layout">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo">📁</div>
+            <span class="sidebar-title">File Manager</span>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-section">
+                <div class="nav-section-title">Navigasyon</div>
+                <a href="/files/" class="nav-item"><span class="icon">📂</span><span>Dosyalar</span></a>
+                <a href="/trash/" class="nav-item"><span class="icon">🗑️</span><span>Çöp Kutusu</span></a>
+                <a href="/search/" class="nav-item active"><span class="icon">🔍</span><span>Arama</span></a>
+            </div>
+            {{if .User}}{{if .User.IsAdmin}}
+            <div class="nav-section">
+                <div class="nav-section-title">Yönetim</div>
+                <a href="/admin/" class="nav-item"><span class="icon">⚙️</span><span>Admin Paneli</span></a>
+            </div>
+            {{end}}{{end}}
+        </nav>
+        <div class="sidebar-footer">
+            <div class="user-card">
+                <div class="user-avatar">{{if .User}}{{slice .User.Username 0 1}}{{end}}</div>
+                <div class="user-info">
+                    <div class="user-name">{{if .User}}{{.User.Username}}{{end}}</div>
+                    <div class="user-role">{{if .User}}{{.User.Role}}{{end}}</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="header">
+            <button class="mobile-menu-toggle" onclick="toggleSidebar()">☰</button>
+            <nav class="breadcrumb">
+                <span class="breadcrumb-item active">🔍 Arama</span>
+            </nav>
+            <div class="header-actions">
+                <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+            </div>
+        </header>
+
+        <div class="content-area">
+            <h2 style="font-size: 1.3rem; font-weight: 600; margin-bottom: 16px;">🔍 Dosya Ara</h2>
+            <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                <div class="search-bar" style="flex: 1;">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" class="search-input" id="searchInput" style="width: 100%;" placeholder="Dosya veya klasör adı ara..." value="{{.Query}}" autofocus>
+                </div>
+                <button class="btn btn-primary" onclick="performSearch()">Ara</button>
+            </div>
+            <div class="search-filters">
+                <button class="filter-chip active" data-type="" onclick="setFilter(this)">Tümü</button>
+                <button class="filter-chip" data-type="folder" onclick="setFilter(this)">📁 Klasör</button>
+                <button class="filter-chip" data-type="image" onclick="setFilter(this)">🖼️ Resim</button>
+                <button class="filter-chip" data-type="video" onclick="setFilter(this)">🎬 Video</button>
+                <button class="filter-chip" data-type="audio" onclick="setFilter(this)">🎵 Ses</button>
+                <button class="filter-chip" data-type="code" onclick="setFilter(this)">💻 Kod</button>
+                <button class="filter-chip" data-type="document" onclick="setFilter(this)">📄 Doküman</button>
+                <label style="display: flex; align-items: center; gap: 4px; font-size: 0.82rem; color: var(--text-secondary); margin-left: 8px;">
+                    <input type="checkbox" id="searchTrash"> Çöp kutusunda da ara
+                </label>
+            </div>
+            <div id="searchResults">
+                <div class="empty-state">
+                    <div class="empty-icon">🔍</div>
+                    <div class="empty-title">Arama yapmak için bir kelime girin</div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+<div class="toast-container" id="toastContainer"></div>
+<script>window.csrfToken = "{{.CSRFToken}}";</script>
+<script src="/static/js/app.js"></script>
+<script src="/static/js/search.js"></script>
+</body>
+</html>
