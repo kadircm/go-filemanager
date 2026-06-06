@@ -95,7 +95,10 @@ func CreateDirectory(rootDir, dirPath string) error {
 		return err
 	}
 
-	return os.MkdirAll(fullPath, 0755)
+	if err := os.MkdirAll(fullPath, 0755); err != nil {
+		return err
+	}
+	return utils.MatchParentPermissions(fullPath)
 }
 
 // CreateFile creates a new empty file
@@ -110,12 +113,14 @@ func CreateFile(rootDir, filePath string) error {
 	if err := os.MkdirAll(parent, 0755); err != nil {
 		return fmt.Errorf("failed to create parent directory: %w", err)
 	}
+	utils.MatchParentPermissions(parent)
 
 	f, err := os.Create(fullPath)
 	if err != nil {
 		return fmt.Errorf("failed to create file: %w", err)
 	}
-	return f.Close()
+	f.Close()
+	return utils.MatchParentPermissions(fullPath)
 }
 
 // RenameFile renames a file or directory
@@ -204,7 +209,10 @@ func WriteFileContent(rootDir, filePath, content string) error {
 		mode = info.Mode()
 	}
 
-	return os.WriteFile(fullPath, []byte(content), mode)
+	if err := os.WriteFile(fullPath, []byte(content), mode); err != nil {
+		return err
+	}
+	return utils.MatchParentPermissions(fullPath)
 }
 
 // GetFileInfo returns info about a file or directory
@@ -268,6 +276,7 @@ func copyFile(src, dst string) error {
 	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
 		return err
 	}
+	utils.MatchParentPermissions(filepath.Dir(dst))
 
 	dstFile, err := os.Create(dst)
 	if err != nil {
@@ -275,8 +284,10 @@ func copyFile(src, dst string) error {
 	}
 	defer dstFile.Close()
 
-	_, err = io.Copy(dstFile, srcFile)
-	return err
+	if _, err = io.Copy(dstFile, srcFile); err != nil {
+		return err
+	}
+	return utils.MatchParentPermissions(dst)
 }
 
 // copyDir copies a directory recursively
@@ -289,6 +300,7 @@ func copyDir(src, dst string) error {
 	if err := os.MkdirAll(dst, srcInfo.Mode()); err != nil {
 		return err
 	}
+	utils.MatchParentPermissions(dst)
 
 	entries, err := os.ReadDir(src)
 	if err != nil {

@@ -242,11 +242,13 @@ func APIUploadFile(c *fiber.Ctx) error {
 
 		// Ensure directory exists
 		os.MkdirAll(filepath.Dir(fullDest), 0755)
+		utils.MatchParentPermissions(filepath.Dir(fullDest))
 
 		if err := c.SaveFile(file, fullDest); err != nil {
 			log.Printf("Upload error for %s: %v", file.Filename, err)
 			continue
 		}
+		utils.MatchParentPermissions(fullDest)
 
 		services.LogAudit(user.ID, user.Username, services.AuditUpload, destPath,
 			fmt.Sprintf("Boyut: %s", utils.FormatFileSize(file.Size)), c.IP())
